@@ -6,9 +6,12 @@ local LocalPlayer = Players.LocalPlayer
 -- Set the shooting remote event name here
 local shootRemote = ReplicatedStorage:WaitForChild("ShootingEvent")
 
--- Create GUI
-local screenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+-- Create GUI properly
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "BlossomHub"
+screenGui.Parent = playerGui
+print("BlossomHub GUI created")
 
 local mainFrame = Instance.new("Frame", screenGui)
 mainFrame.Size = UDim2.new(0, 450, 0, 500)
