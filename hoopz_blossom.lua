@@ -1,7 +1,10 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
+
+-- Set the shooting remote event name here
+local shootRemote = ReplicatedStorage:WaitForChild("ShootingEvent")
 
 -- Create GUI
 local screenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
@@ -65,13 +68,13 @@ local aimPage = Instance.new("Frame", contentFrame)
 aimPage.Size = UDim2.new(1, 0, 1, 0)
 aimPage.Visible = false
 aimPage.BackgroundTransparency = 1
-pages["Aim"] = aimPage
+pages["Silent Aim"] = aimPage
 
 -- Create tab buttons
 local tabButtons = {
     ["Main"] = createTab("Main", 0),
     ["Player"] = createTab("Player", 45),
-    ["Aim"] = createTab("Silent Aim", 90),
+    ["Silent Aim"] = createTab("Silent Aim", 90),
 }
 
 for tab, button in pairs(tabButtons) do
@@ -138,7 +141,7 @@ silentAimToggle.MouseButton1Click:Connect(function()
     silentAimToggle.Text = "Silent Aim: " .. (silentAim and "ON" or "OFF")
 end)
 
--- New: Body Aura Toggle (green)
+-- Body Aura toggle (green)
 local auraToggle = Instance.new("TextButton", mainPage)
 auraToggle.Size = UDim2.new(0, 200, 0, 40)
 auraToggle.Position = UDim2.new(0, 20, 0, 80)
@@ -170,13 +173,10 @@ local function removeAura(character)
     end
 end
 
--- Function to check if player can shoot (example placeholder)
--- You need to replace with actual game logic to detect shooting cooldown
+-- Function to check if player can shoot (placeholder)
 local function canShoot()
-    -- Replace this with actual condition to detect if player can shoot
-    -- For now, we simulate always true for demo
-    -- e.g., check a bool value in Player, or a remote event cooldown
-    return true
+    -- Replace with actual Hoopz shooting cooldown or condition
+    return true -- for demo, always true
 end
 
 -- Auto Aura + Jump + Auto Shoot loop
@@ -185,14 +185,11 @@ RunService.Heartbeat:Connect(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             if canShoot() then
                 createAura(LocalPlayer.Character)
-                -- Jump if on floor
                 if LocalPlayer.Character.Humanoid.FloorMaterial ~= Enum.Material.Air then
                     LocalPlayer.Character.Humanoid.Jump = true
                 end
-                -- Auto shoot (placeholder)
                 if autoShoot then
-                    -- Add your Hoopz shoot code here
-                    -- Example: fire a remote or invoke shooting function
+                    shootRemote:FireServer()
                 end
             else
                 removeAura(LocalPlayer.Character)
