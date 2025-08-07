@@ -58,22 +58,29 @@ end
 -- Tabs
 local tabs = {"Main", "Player", "ESP"}
 
--- Create tab buttons
+-- Create tab buttons and pages
 local tabButtons = {}
+local pages = {}
+
 for i, tabName in ipairs(tabs) do
     local btn = createTabButton(tabName, (i-1)*45)
     tabButtons[tabName] = btn
+    
+    local page = Instance.new("Frame")
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.BackgroundTransparency = 1
+    page.Visible = (i == 1) -- Show first tab by default
+    page.Parent = contentFrame
+    pages[tabName] = page
+    
+    btn.MouseButton1Click:Connect(function()
+        for _, p in pairs(pages) do p.Visible = false end
+        page.Visible = true
+    end)
 end
 
--- Content for each tab
-local pages = {}
-
--- === Main Tab ===
-local mainPage = Instance.new("Frame")
-mainPage.Size = UDim2.new(1, 0, 1, 0)
-mainPage.BackgroundTransparency = 1
-mainPage.Parent = contentFrame
-pages["Main"] = mainPage
+-- ==== Main Tab ====
+local mainPage = pages["Main"]
 
 local autoShotToggle = Instance.new("TextButton")
 autoShotToggle.Size = UDim2.new(0, 200, 0, 40)
@@ -89,24 +96,19 @@ autoShotToggle.MouseButton1Click:Connect(function()
     autoShotToggle.Text = "Auto Shot: "..(autoShotEnabled and "ON" or "OFF")
 end)
 
--- Placeholder: Auto Shot logic
-spawn(function()
+coroutine.wrap(function()
     while true do
         RunService.Heartbeat:Wait()
         if autoShotEnabled then
-            -- Add your hoopz auto shot code here
-            -- Example: print("Auto shot triggered")
+            -- TODO: Add Hoopz auto shot logic here
+            -- Example:
+            -- print("Auto Shot active")
         end
     end
-end)
+end)()
 
--- === Player Tab ===
-local playerPage = Instance.new("Frame")
-playerPage.Size = UDim2.new(1, 0, 1, 0)
-playerPage.BackgroundTransparency = 1
-playerPage.Parent = contentFrame
-playerPage.Visible = false
-pages["Player"] = playerPage
+-- ==== Player Tab ====
+local playerPage = pages["Player"]
 
 local speedLabel = Instance.new("TextLabel")
 speedLabel.Text = "WalkSpeed: 16"
@@ -135,13 +137,8 @@ speedSlider.FocusLost:Connect(function()
     end
 end)
 
--- === ESP Tab ===
-local espPage = Instance.new("Frame")
-espPage.Size = UDim2.new(1, 0, 1, 0)
-espPage.BackgroundTransparency = 1
-espPage.Parent = contentFrame
-espPage.Visible = false
-pages["ESP"] = espPage
+-- ==== ESP Tab ====
+local espPage = pages["ESP"]
 
 local espToggle = Instance.new("TextButton")
 espToggle.Size = UDim2.new(0, 200, 0, 40)
@@ -155,12 +152,16 @@ local espEnabled = false
 local espLabels = {}
 
 local function createEspLabel(player)
+    local head = player.Character and player.Character:FindFirstChild("Head")
+    if not head then return end
+    
     local billboard = Instance.new("BillboardGui")
-    billboard.Adornee = player.Character and player.Character:FindFirstChild("Head")
+    billboard.Adornee = head
     billboard.Size = UDim2.new(0, 100, 0, 50)
     billboard.StudsOffset = Vector3.new(0, 2, 0)
     billboard.AlwaysOnTop = true
-    billboard.Parent = player.Character and player.Character:FindFirstChild("Head")
+    billboard.Name = "ESPBillboard"
+    billboard.Parent = head
 
     local label = Instance.new("TextLabel")
     label.Text = player.Name
@@ -180,7 +181,42 @@ espToggle.MouseButton1Click:Connect(function()
     espToggle.Text = "ESP: "..(espEnabled and "ON" or "OFF")
 
     if espEnabled then
-        -- Create ESP for all players except local
         for _, plr in pairs(Players:GetPlayers()) do
             if plr ~= Player and plr.Character and plr.Character:FindFirstChild("Head") then
-                espLabels[plr
+                if not espLabels[plr] then
+                    espLabels[plr] = createEspLabel(plr)
+                end
+            end
+        end
+
+        Players.PlayerAdded:Connect(function(plr)
+            plr.CharacterAdded:Connect(function(char)
+                if espEnabled then
+                    wait(1)
+                    if char:FindFirstChild("Head") then
+                        espLabels[plr] = createEspLabel(plr)
+                    end
+                end
+            end)
+        end)
+
+        for _, plr in pairs(Players:GetPlayers()) do
+            plr.CharacterAdded:Connect(function(char)
+                if espEnabled then
+                    wait(1)
+                    if char:FindFirstChild("Head") then
+                        espLabels[plr] = createEspLabel(plr)
+                    end
+                end
+            end)
+        end
+
+    else
+        for plr, label in pairs(espLabels) do
+            if label and label.Parent then
+                label:Destroy()
+            end
+            espLabels[plr] = nil
+        end
+    end
+end)
