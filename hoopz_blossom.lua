@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Create GUI
@@ -22,7 +23,7 @@ title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 24
 
--- Tabs
+-- Tabs frame
 local tabsFrame = Instance.new("Frame", mainFrame)
 tabsFrame.Size = UDim2.new(0, 100, 1, -50)
 tabsFrame.Position = UDim2.new(0, 0, 0, 50)
@@ -47,28 +48,26 @@ end
 
 local pages = {}
 
--- Main tab
+-- Create tabs and pages
 local mainPage = Instance.new("Frame", contentFrame)
 mainPage.Size = UDim2.new(1, 0, 1, 0)
 mainPage.Visible = true
 mainPage.BackgroundTransparency = 1
 pages["Main"] = mainPage
 
--- Player tab
 local playerPage = Instance.new("Frame", contentFrame)
 playerPage.Size = UDim2.new(1, 0, 1, 0)
 playerPage.Visible = false
 playerPage.BackgroundTransparency = 1
 pages["Player"] = playerPage
 
--- Aim tab
 local aimPage = Instance.new("Frame", contentFrame)
 aimPage.Size = UDim2.new(1, 0, 1, 0)
 aimPage.Visible = false
 aimPage.BackgroundTransparency = 1
 pages["Aim"] = aimPage
 
--- Tab buttons
+-- Create tab buttons
 local tabButtons = {
     ["Main"] = createTab("Main", 0),
     ["Player"] = createTab("Player", 45),
@@ -89,7 +88,7 @@ autoShootToggle.Size = UDim2.new(0, 200, 0, 40)
 autoShootToggle.Position = UDim2.new(0, 20, 0, 20)
 autoShootToggle.Text = "Auto Shoot: OFF"
 autoShootToggle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-autoShootToggle.TextColor3 = Color3.new(1,1,1)
+autoShootToggle.TextColor3 = Color3.new(1, 1, 1)
 
 local autoShoot = false
 autoShootToggle.MouseButton1Click:Connect(function()
@@ -97,26 +96,26 @@ autoShootToggle.MouseButton1Click:Connect(function()
     autoShootToggle.Text = "Auto Shoot: " .. (autoShoot and "ON" or "OFF")
 end)
 
--- Auto Shoot logic placeholder
-RunService.Heartbeat:Connect(function()
-    if autoShoot then
-        -- insert auto shoot logic here
-        -- e.g. fire a remote event or manipulate hoopz shooting function
-    end
-end)
+-- Walkspeed slider
+local speedLabel = Instance.new("TextLabel", playerPage)
+speedLabel.Text = "WalkSpeed: 16"
+speedLabel.Position = UDim2.new(0, 20, 0, 20)
+speedLabel.Size = UDim2.new(0, 150, 0, 30)
+speedLabel.BackgroundTransparency = 1
+speedLabel.TextColor3 = Color3.new(1, 1, 1)
 
--- Walkspeed Slider
 local speedBox = Instance.new("TextBox", playerPage)
 speedBox.Size = UDim2.new(0, 100, 0, 30)
-speedBox.Position = UDim2.new(0, 20, 0, 20)
+speedBox.Position = UDim2.new(0, 20, 0, 60)
 speedBox.Text = "16"
 speedBox.ClearTextOnFocus = false
-speedBox.TextColor3 = Color3.new(1, 1, 1)
 speedBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+speedBox.TextColor3 = Color3.new(1, 1, 1)
 
 speedBox.FocusLost:Connect(function()
     local speed = tonumber(speedBox.Text)
     if speed and speed >= 16 and speed <= 100 then
+        speedLabel.Text = "WalkSpeed: " .. speed
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.WalkSpeed = speed
         end
@@ -131,7 +130,7 @@ silentAimToggle.Size = UDim2.new(0, 200, 0, 40)
 silentAimToggle.Position = UDim2.new(0, 20, 0, 20)
 silentAimToggle.Text = "Silent Aim: OFF"
 silentAimToggle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-silentAimToggle.TextColor3 = Color3.new(1,1,1)
+silentAimToggle.TextColor3 = Color3.new(1, 1, 1)
 
 local silentAim = false
 silentAimToggle.MouseButton1Click:Connect(function()
@@ -139,6 +138,69 @@ silentAimToggle.MouseButton1Click:Connect(function()
     silentAimToggle.Text = "Silent Aim: " .. (silentAim and "ON" or "OFF")
 end)
 
--- Silent Aim logic placeholder
--- You’ll need to hook into Hoopz shooting remotes to redirect shots
--- Add that here when ready
+-- New: Body Aura Toggle (green)
+local auraToggle = Instance.new("TextButton", mainPage)
+auraToggle.Size = UDim2.new(0, 200, 0, 40)
+auraToggle.Position = UDim2.new(0, 20, 0, 80)
+auraToggle.Text = "Auto Aura Shoot: OFF"
+auraToggle.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+auraToggle.TextColor3 = Color3.new(1, 1, 1)
+
+local autoAura = false
+auraToggle.MouseButton1Click:Connect(function()
+    autoAura = not autoAura
+    auraToggle.Text = "Auto Aura Shoot: " .. (autoAura and "ON" or "OFF")
+end)
+
+-- Helper: Create green aura effect
+local function createAura(character)
+    if character:FindFirstChild("Aura") then return end
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "Aura"
+    highlight.FillColor = Color3.fromRGB(0, 255, 0)
+    highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+    highlight.Adornee = character
+    highlight.Parent = character
+end
+
+local function removeAura(character)
+    local aura = character:FindFirstChild("Aura")
+    if aura then
+        aura:Destroy()
+    end
+end
+
+-- Function to check if player can shoot (example placeholder)
+-- You need to replace with actual game logic to detect shooting cooldown
+local function canShoot()
+    -- Replace this with actual condition to detect if player can shoot
+    -- For now, we simulate always true for demo
+    -- e.g., check a bool value in Player, or a remote event cooldown
+    return true
+end
+
+-- Auto Aura + Jump + Auto Shoot loop
+RunService.Heartbeat:Connect(function()
+    if autoAura then
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            if canShoot() then
+                createAura(LocalPlayer.Character)
+                -- Jump if on floor
+                if LocalPlayer.Character.Humanoid.FloorMaterial ~= Enum.Material.Air then
+                    LocalPlayer.Character.Humanoid.Jump = true
+                end
+                -- Auto shoot (placeholder)
+                if autoShoot then
+                    -- Add your Hoopz shoot code here
+                    -- Example: fire a remote or invoke shooting function
+                end
+            else
+                removeAura(LocalPlayer.Character)
+            end
+        end
+    else
+        if LocalPlayer.Character then
+            removeAura(LocalPlayer.Character)
+        end
+    end
+end)
