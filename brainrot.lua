@@ -1,135 +1,163 @@
-local OrionLib = OrionLib
-local Player = game.Players.LocalPlayer
+-- Minimal GUI for Steal a Brainrot (No Orion) - Delta Friendly
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+
+local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 local Mouse = Player:GetMouse()
 
-local Window = OrionLib:MakeWindow({
-    Name = "🧠 Net | Steal a Brainrot Hub",
-    HidePremium = false,
-    SaveConfig = false,
-    ConfigFolder = "BrainrotNet"
-})
+-- Create ScreenGui
+local ScreenGui = Instance.new("ScreenGui", Player:WaitForChild("PlayerGui"))
+ScreenGui.Name = "NetHubSimple"
 
--- MAIN TAB
-local Main = Window:MakeTab({
-    Name = "Main",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
+-- Main Frame
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 300, 0, 350)
+Frame.Position = UDim2.new(0, 20, 0, 100)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
 
-Main:AddToggle({
-    Name = "Auto Steal Brains (TP to Base)",
-    Default = false,
-    Callback = function(state)
-        getgenv().AutoSteal = state
-        while getgenv().AutoSteal do
-            for _, v in pairs(game:GetService("Players"):GetPlayers()) do
-                if v ~= Player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                    pcall(function()
-                        game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("StealBrain"):FireServer(v)
-                        task.wait(0.2)
-                        local base = workspace:FindFirstChild(Player.Name.."'s Base") or workspace:FindFirstChild(Player.Name.."_Base")
-                        if base and base:FindFirstChild("Spawn") then
-                            Character:MoveTo(base.Spawn.Position + Vector3.new(0, 3, 0))
-                        else
-                            warn("Base not found or missing spawn part.")
-                        end
-                    end)
-                end
-                task.wait(1)
-            end
+-- Title
+local Title = Instance.new("TextLabel", Frame)
+Title.Text = "🧠 Net Hub Simple"
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 22
+
+-- Utility function to create buttons
+local function createButton(text, posY, callback)
+    local btn = Instance.new("TextButton", Frame)
+    btn.Size = UDim2.new(1, -20, 0, 35)
+    btn.Position = UDim2.new(0, 10, 0, posY)
+    btn.Text = text
+    btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.SourceSans
+    btn.TextSize = 20
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+-- Utility function to create sliders
+local function createSlider(text, posY, min, max, default, callback)
+    local label = Instance.new("TextLabel", Frame)
+    label.Text = text..": "..default
+    label.Size = UDim2.new(1, -20, 0, 25)
+    label.Position = UDim2.new(0, 10, 0, posY)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.new(1,1,1)
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 18
+
+    local slider = Instance.new("TextBox", Frame)
+    slider.Size = UDim2.new(1, -20, 0, 25)
+    slider.Position = UDim2.new(0, 10, 0, posY + 25)
+    slider.Text = tostring(default)
+    slider.ClearTextOnFocus = false
+    slider.TextColor3 = Color3.new(0,0,0)
+    slider.Font = Enum.Font.SourceSans
+    slider.TextSize = 18
+
+    slider.FocusLost:Connect(function()
+        local val = tonumber(slider.Text)
+        if val and val >= min and val <= max then
+            label.Text = text..": "..val
+            callback(val)
+        else
+            slider.Text = tostring(default)
         end
-    end
-})
+    end)
 
-Main:AddToggle({
-    Name = "Kill Aura",
-    Default = false,
-    Callback = function(state)
-        getgenv().KillAura = state
-        while getgenv().KillAura do
-            for _, v in pairs(game.Players:GetPlayers()) do
-                if v ~= Player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                    local dist = (v.Character.HumanoidRootPart.Position - Character.HumanoidRootPart.Position).Magnitude
-                    if dist < 10 then
-                        game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Attack"):FireServer(v)
+    return slider
+end
+
+-- Variables
+local AutoSteal = false
+local KillAura = false
+
+-- Auto Steal Toggle Button
+local autoStealBtn = createButton("Toggle Auto Steal Brains: OFF", 50, function()
+    AutoSteal = not AutoSteal
+    autoStealBtn.Text = "Toggle Auto Steal Brains: "..(AutoSteal and "ON" or "OFF")
+    if AutoSteal then
+        spawn(function()
+            while AutoSteal do
+                for _, v in pairs(Players:GetPlayers()) do
+                    if v ~= Player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                        pcall(function()
+                            ReplicatedStorage.Events.StealBrain:FireServer(v)
+                            wait(0.3)
+                            local base = workspace:FindFirstChild(Player.Name.."'s Base") or workspace:FindFirstChild(Player.Name.."_Base")
+                            if base and base:FindFirstChild("Spawn") then
+                                Character:MoveTo(base.Spawn.Position + Vector3.new(0, 3, 0))
+                            end
+                        end)
                     end
                 end
+                wait(1)
             end
-            task.wait(0.5)
-        end
+        end)
     end
-})
+end)
 
--- PLAYER TAB
-local PlayerTab = Window:MakeTab({
-    Name = "Player",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-PlayerTab:AddSlider({
-    Name = "WalkSpeed",
-    Min = 16,
-    Max = 100,
-    Default = 16,
-    Increment = 1,
-    Callback = function(val)
-        Humanoid.WalkSpeed = val
-    end
-})
-
-PlayerTab:AddSlider({
-    Name = "JumpPower",
-    Min = 50,
-    Max = 200,
-    Default = 50,
-    Increment = 1,
-    Callback = function(val)
-        Humanoid.JumpPower = val
-    end
-})
-
-PlayerTab:AddButton({
-    Name = "Click TP (Ctrl + Click)",
-    Callback = function()
-        game:GetService("UserInputService").InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 and game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftControl) then
-                if Mouse.Target then
-                    Character:MoveTo(Mouse.Hit.Position)
+-- Kill Aura Toggle Button
+local killAuraBtn = createButton("Toggle Kill Aura: OFF", 100, function()
+    KillAura = not KillAura
+    killAuraBtn.Text = "Toggle Kill Aura: "..(KillAura and "ON" or "OFF")
+    if KillAura then
+        spawn(function()
+            while KillAura do
+                for _, v in pairs(Players:GetPlayers()) do
+                    if v ~= Player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                        local dist = (v.Character.HumanoidRootPart.Position - Character.HumanoidRootPart.Position).Magnitude
+                        if dist < 10 then
+                            pcall(function()
+                                ReplicatedStorage.Events.Attack:FireServer(v)
+                            end)
+                        end
+                    end
                 end
+                wait(0.5)
             end
         end)
     end
-})
+end)
 
-PlayerTab:AddButton({
-    Name = "Infinite Jump",
-    Callback = function()
-        game:GetService("UserInputService").JumpRequest:Connect(function()
-            Humanoid:ChangeState("Jumping")
-        end)
-    end
-})
+-- WalkSpeed Slider
+createSlider("WalkSpeed", 150, 16, 100, 16, function(val)
+    Humanoid.WalkSpeed = val
+end)
 
--- MISC TAB
-local Misc = Window:MakeTab({
-    Name = "Misc",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
+-- JumpPower Slider
+createSlider("JumpPower", 210, 50, 200, 50, function(val)
+    Humanoid.JumpPower = val
+end)
 
-Misc:AddButton({
-    Name = "Anti-AFK",
-    Callback = function()
-        local vu = game:GetService("VirtualUser")
-        game:GetService("Players").LocalPlayer.Idled:Connect(function()
-            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            task.wait(1)
-            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        end)
-    end
-})
+-- Infinite Jump
+local infiniteJumpBtn = createButton("Enable Infinite Jump", 270, function()
+    UserInputService.JumpRequest:Connect(function()
+        Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end)
+    infiniteJumpBtn.Text = "Infinite Jump Enabled"
+    infiniteJumpBtn.Active = false
+end)
 
-OrionLib:Init()
+-- Click TP Button
+local clickTPBtn = createButton("Enable Click TP (Hold Ctrl + Click)", 310, function()
+    UserInputService.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            if Mouse.Target then
+                Character:MoveTo(Mouse.Hit.Position)
+            end
+        end
+    end)
+    clickTPBtn.Text = "Click TP Enabled"
+    clickTPBtn.Active = false
+end)
